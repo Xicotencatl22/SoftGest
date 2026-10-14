@@ -268,16 +268,18 @@ export default function Ventas() {
 
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">Agregar Producto / Refacción</label>
-                <select 
+                <input
+                  list="lista-productos"
+                  placeholder="Escribe para buscar un producto..."
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                  value=""
-                  onChange={e => agregarProducto(e.target.value)}
-                >
-                  <option value="">Seleccionar producto para añadir...</option>
-                  {productos.map(p => (
-                    <option key={p.idproductos} value={p.idproductos}>{p.nombre} (${p.precio_venta})</option>
-                  ))}
-                </select>
+                  onChange={e => {
+                    const p = productos.find(x => x.nombre === e.target.value);
+                    if (p) { agregarProducto(p.idproductos); e.target.value = ''; }
+                  }}
+                />
+                <datalist id="lista-productos">
+                  {productos.map(p => <option key={p.idproductos} value={p.nombre} />)}
+                </datalist>
               </div>
 
               {/* Lista de productos seleccionados */}
@@ -345,4 +347,4 @@ export default function Ventas() {
       )}
     </AdminLayout>
   );
-}
+}
