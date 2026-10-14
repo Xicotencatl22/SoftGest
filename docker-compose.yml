@@ -1,0 +1,58 @@
+services:
+
+  db:
+    # Debe ser 18: backup.sql se generó con PostgreSQL 18.3 y falla en versiones anteriores
+    image: postgres:18-alpine
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-cambia_esta_clave}
+      POSTGRES_DB: SanJorge
+    volumes:
+      # En PostgreSQL 18 el volumen se monta en /var/lib/postgresql (ya no en .../data)
+      - postgres_data:/var/lib/postgresql
+      # Se ejecutan solo la primera vez, en orden alfabético
+      - ./db/00-roles.sql:/docker-entrypoint-initdb.d/00-roles.sql:ro
+      - ./backup.sql:/docker-entrypoint-initdb.d/01-backup.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d SanJorge"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: backend
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-cambia_esta_clave}
+      DB_NAME: SanJorge
+      PORT: 4000
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  frontend:
+    build: ./taller-frontend
+    container_name: frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
